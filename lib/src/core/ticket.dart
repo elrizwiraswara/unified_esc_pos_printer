@@ -197,13 +197,13 @@ class Ticket {
   void row(
     List<PrintColumn> cols, {
     bool multiLine = true,
-    int spaceBetweenRows = 5,
+    int columnGap = 1,
   }) {
     return _bytes.addAll(
       _gen.row(
         cols,
         multiLine: multiLine,
-        spaceBetweenRows: spaceBetweenRows,
+        columnGap: columnGap,
       ),
     );
   }

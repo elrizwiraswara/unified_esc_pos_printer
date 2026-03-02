@@ -410,7 +410,7 @@ class Generator {
   List<int> row(
     List<PrintColumn> cols, {
     bool multiLine = true,
-    int spaceBetweenRows = 5,
+    int columnGap = 1,
   }) {
     final int totalFlex = cols.fold(0, (sum, c) => sum + c.flex);
     final int paperPx = paperSize.widthPixels;
@@ -426,8 +426,9 @@ class Generator {
 
       runningFlex += cols[i].flex;
 
-      final int toPx =
-          (paperPx * runningFlex / totalFlex).round() - spaceBetweenRows;
+      final bool isLastCol = i == cols.length - 1;
+      final int toPx = (paperPx * runningFlex / totalFlex).round() -
+          (isLastCol ? 0 : columnGap);
 
       final double charWidth = _getCharWidth(cols[i].styles);
       final int maxCharsNb = ((toPx - fromPx) / charWidth).floor();
@@ -466,7 +467,7 @@ class Generator {
     }
 
     bytes += emptyLines(1);
-    if (isNextRow) bytes += row(nextRow, spaceBetweenRows: spaceBetweenRows);
+    if (isNextRow) bytes += row(nextRow, columnGap: columnGap);
 
     return bytes;
   }
