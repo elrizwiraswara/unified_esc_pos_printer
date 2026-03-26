@@ -8,6 +8,7 @@ public class UnifiedEscPosPrinterPlugin: NSObject, FlutterPlugin {
 
     private var bleManager: BleManager?
     private var connectionStateHandler: ConnectionStateStreamHandler?
+    private var scanStreamHandler: BleScanStreamHandler?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let instance = UnifiedEscPosPrinterPlugin()
@@ -29,7 +30,9 @@ public class UnifiedEscPosPrinterPlugin: NSObject, FlutterPlugin {
             name: "com.elriztechnology.unified_esc_pos_printer/ble_scan",
             binaryMessenger: messenger
         )
-        bleScanEventChannel?.setStreamHandler(bleManager?.scanStreamHandler)
+        
+        scanStreamHandler = BleScanStreamHandler(manager: bleManager!)
+        bleScanEventChannel?.setStreamHandler(scanStreamHandler)
 
         // BT scan channel — not supported on iOS, use a no-op handler
         let btScanEventChannel = FlutterEventChannel(
