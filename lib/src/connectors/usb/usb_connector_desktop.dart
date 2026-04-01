@@ -33,7 +33,7 @@ class UsbConnectorImpl extends UsbConnectorBase {
     Duration timeout = const Duration(seconds: 5),
   }) async* {
     _setState(PrinterConnectionState.scanning);
-    final List<String> ports = SerialPort.availablePorts;
+    final List<String> ports = SerialPort.getAvailablePorts();
     _setState(PrinterConnectionState.disconnected);
 
     // Filter out Bluetooth virtual COM ports (e.g. "Standard Serial over
@@ -41,12 +41,11 @@ class UsbConnectorImpl extends UsbConnectorBase {
     final List<UsbPrinterDevice> devices = [];
     for (final String path in ports) {
       final SerialPort sp = SerialPort(path);
-      final int transport = sp.transport;
-      final String name =
-          sp.description?.isNotEmpty == true ? sp.description! : path;
+      final info = sp.getInfo();
+      final String name = info.name.isNotEmpty == true ? info.name : path;
       sp.dispose();
 
-      if (transport == SerialPortTransport.bluetooth) continue;
+      if (info.transport == SerialPortTransport.bluetooth) continue;
 
       devices.add(UsbPrinterDevice(
         name: name,
@@ -77,18 +76,21 @@ class UsbConnectorImpl extends UsbConnectorBase {
 
     final SerialPort port = SerialPort(device.identifier);
     try {
-      if (!port.openReadWrite()) {
-        throw Exception(SerialPort.lastError?.message ?? 'Could not open port');
+      port.open();
+
+      if (!port.isOpen()) {
+        throw Exception('Could not open port');
       }
 
-      final SerialPortConfig config = SerialPortConfig()
-        ..baudRate = kDefaultBaudRate
-        ..bits = 8
-        ..stopBits = 1
-        ..parity = SerialPortParity.none
-        ..setFlowControl(SerialPortFlowControl.none);
+      final SerialPortConfig config = SerialPortConfig(
+        baudRate: kDefaultBaudRate,
+        bits: 8,
+        stopBits: 1,
+        parity: SerialPortParity.none,
+        xonXoff: SerialPortXonXoff.disabled,
+      );
 
-      port.config = config;
+      port.setConfig(config);
 
       // Send ESC @ to initialise the printer.
       port.write(Uint8List.fromList(cInit.codeUnits));
