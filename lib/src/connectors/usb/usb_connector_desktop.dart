@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data' show Uint8List;
 
-import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:libserialport_plus/libserialport_plus.dart';
 
 import '../../core/commands.dart';
 import '../../exceptions/printer_exception.dart';
