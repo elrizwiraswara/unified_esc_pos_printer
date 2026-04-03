@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart' show TextStyle;
-import 'package:image/image.dart' show Image;
+import 'package:image/image.dart' as img;
 
 import '../utils/text_image_renderer.dart';
 import 'barcode.dart';
@@ -11,6 +11,7 @@ import 'capability_profile.dart';
 import 'enums.dart';
 import 'generator.dart';
 import 'print_column.dart';
+import 'print_raster_column.dart';
 import 'qrcode.dart';
 import 'print_text_styles.dart';
 
@@ -213,6 +214,90 @@ class Ticket {
     );
   }
 
+  /// Print a table row using Flutter-rendered raster text.
+  ///
+  /// Each column's text is rendered as an image using Flutter's text engine,
+  /// then all columns are composited side-by-side into a single raster image.
+  /// This supports any font, script, or [TextStyle] that Flutter can render.
+  ///
+  /// ```dart
+  /// await ticket.rowRaster([
+  ///   PrintRasterColumn(text: '商品', flex: 2),
+  ///   PrintRasterColumn(text: '价格', flex: 1, align: PrintAlign.right),
+  /// ]);
+  /// ```
+  Future<void> rowRaster(
+    List<PrintRasterColumn> cols, {
+    int columnGap = 2,
+    int linesAfter = 0,
+  }) async {
+    final int paperPx = _gen.paperSize.widthPixels;
+    final int totalFlex = cols.fold(0, (sum, c) => sum + c.flex);
+    final int totalGapPx = columnGap * (cols.length - 1);
+    final int usablePx = paperPx - totalGapPx;
+
+    // Render each column's text as a list of line images.
+    final List<List<img.Image>> columnImages = [];
+    for (final col in cols) {
+      final int colWidth = (usablePx * col.flex / totalFlex).round();
+      final lines = await renderTextLinesAsImages(
+        col.text,
+        style: col.style,
+        maxWidth: colWidth.toDouble(),
+        textDirection: col.textDirection,
+      );
+      columnImages.add(lines);
+    }
+
+    // Determine the tallest column to set the row height.
+    int rowHeight = 0;
+    for (final lines in columnImages) {
+      int colHeight = 0;
+      for (final line in lines) {
+        colHeight += line.height;
+      }
+      if (colHeight > rowHeight) rowHeight = colHeight;
+    }
+    if (rowHeight == 0) return;
+
+    // Composite all columns into a single row image.
+    final img.Image rowImage = img.Image(
+      width: paperPx,
+      height: rowHeight,
+    );
+    // Fill with white.
+    img.fill(rowImage, color: img.ColorUint8.rgb(255, 255, 255));
+
+    int xOffset = 0;
+    for (int i = 0; i < cols.length; i++) {
+      final int colWidth = (usablePx * cols[i].flex / totalFlex).round();
+      final lines = columnImages[i];
+
+      int yPos = 0;
+      for (final line in lines) {
+        int xPos;
+        switch (cols[i].align) {
+          case PrintAlign.center:
+            xPos = xOffset + ((colWidth - line.width) / 2).round();
+            break;
+          case PrintAlign.right:
+            xPos = xOffset + colWidth - line.width;
+            break;
+          case PrintAlign.left:
+            xPos = xOffset;
+            break;
+        }
+        img.compositeImage(rowImage, line, dstX: xPos, dstY: yPos);
+        yPos += line.height;
+      }
+
+      xOffset += colWidth + columnGap;
+    }
+
+    imageRaster(rowImage, align: PrintAlign.left);
+    if (linesAfter > 0) _bytes.addAll(_gen.feed(linesAfter));
+  }
+
   /// Emit empty newline using ESC d [n] lines (0–255).
   void feed([int n = 1]) => _bytes.addAll(_gen.feed(n));
 
@@ -264,7 +349,7 @@ class Ticket {
 
   /// Print image using ESC * (column format).
   void image(
-    Image img, {
+    img.Image image, {
     PrintAlign align = PrintAlign.center,
     bool isDoubleDensity = true,
     int? maxWidth,
@@ -272,7 +357,7 @@ class Ticket {
   }) {
     return _bytes.addAll(
       _gen.printImage(
-        img,
+        image,
         align: align,
         isDoubleDensity: isDoubleDensity,
         maxWidth: maxWidth,
@@ -283,7 +368,7 @@ class Ticket {
 
   /// Print image using GS v 0 or GS ( L (raster format).
   void imageRaster(
-    Image img, {
+    img.Image image, {
     PrintAlign align = PrintAlign.center,
     bool highDensityHorizontal = true,
     bool highDensityVertical = true,
@@ -293,7 +378,7 @@ class Ticket {
   }) {
     return _bytes.addAll(
       _gen.imageRaster(
-        img,
+        image,
         align: align,
         highDensityHorizontal: highDensityHorizontal,
         highDensityVertical: highDensityVertical,

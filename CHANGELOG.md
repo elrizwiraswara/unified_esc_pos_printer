@@ -1,3 +1,9 @@
+## 3.1.0
+
+- Add `PrintRasterColumn` class for Flutter `TextStyle`-based column definitions
+- Add `Ticket.rowRaster()` method for raster-rendered table rows with full Flutter text styling, multilingual support, and RTL text direction
+- Update example app with Raster Row & Columns demo
+
 ## 3.0.1
 
 - Fix iOS BLE scan stream handler by using explicit `BleScanStreamHandler` when setting the stream handler for the BLE scan event channel ([#1](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/1))

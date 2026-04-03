@@ -8,6 +8,7 @@ A unified ESC/POS thermal printer package for Flutter. Supports USB, Bluetooth C
 - **Device discovery** — Scan for printers across all connection types simultaneously or filter by type
 - **Text formatting** — Bold, underline, reverse, alignment, 8 size multipliers, Font A/B
 - **Table layouts** — Flex-based multi-column rows with per-column styling and text wrapping
+- **Raster table layouts** — Flutter `TextStyle`-powered columns for any font, script, or style
 - **Image printing** — Column format (ESC\*) and raster formats (GS v 0 / GS(L) with auto-resizing
 - **Barcodes** — UPC-A, UPC-E, EAN-13, EAN-8, CODE39, ITF, CODABAR, CODE128
 - **QR codes** — Native printer QR generation with 8 sizes and 4 error correction levels
@@ -176,6 +177,46 @@ ticket.row([
     align: PrintAlign.right,
     style: const PrintTextStyle(bold: true),
   ),
+]);
+```
+
+### Raster Table Layouts
+
+Use `rowRaster()` with `PrintRasterColumn` for multi-column layouts rendered using Flutter's text engine. This supports any font, script, or `TextStyle` that Flutter can render — ideal for CJK, Arabic, or custom-styled columns:
+
+```dart
+// 2-column receipt layout with Flutter TextStyle
+await ticket.rowRaster([
+  PrintRasterColumn(text: 'Cappuccino', flex: 2),
+  PrintRasterColumn(text: '\$4.50', flex: 1, align: PrintAlign.right),
+]);
+
+// Styled columns
+await ticket.rowRaster([
+  PrintRasterColumn(
+    text: 'Bold Title',
+    flex: 1,
+    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+  ),
+  PrintRasterColumn(text: 'Normal', flex: 1, align: PrintAlign.right),
+]);
+
+// Multilingual columns
+await ticket.rowRaster([
+  PrintRasterColumn(text: '商品名', flex: 2),
+  PrintRasterColumn(text: '数量', flex: 1, align: PrintAlign.center),
+  PrintRasterColumn(text: '价格', flex: 1, align: PrintAlign.right),
+]);
+
+// RTL column
+await ticket.rowRaster([
+  PrintRasterColumn(
+    text: 'السعر',
+    flex: 1,
+    textDirection: TextDirection.rtl,
+    align: PrintAlign.right,
+  ),
+  PrintRasterColumn(text: 'Item', flex: 2),
 ]);
 ```
 
@@ -390,6 +431,7 @@ await manager.printBytes([0x1B, 0x40]);
 | `Generator`              | Low-level ESC/POS command generator returning raw byte sequences                                           |
 | `PrintTextStyle`         | Immutable text style configuration (bold, underline, size, font)                                           |
 | `PrintColumn`            | Column definition for table rows with flex-based sizing                                                    |
+| `PrintRasterColumn`      | Column definition for raster table rows with Flutter `TextStyle` support                                   |
 | `CapabilityProfile`      | Printer capability and code page profile loader                                                            |
 | `PrinterDevice`          | Abstract base for `NetworkPrinterDevice`, `BlePrinterDevice`, `BluetoothPrinterDevice`, `UsbPrinterDevice` |
 | `PrinterConnectionState` | Connection state enum with validated transitions                                                           |
@@ -432,6 +474,7 @@ A full-featured demo app is included in the [`example/`](example/) directory. It
 - Connecting/disconnecting with state feedback
 - Printing text styles, sizes, alignment, and fonts
 - Multi-column table layouts (2, 3, and 4 columns)
+- Raster row & columns with Flutter TextStyle (multilingual, custom fonts)
 - Text rasterization for CJK, Arabic, Hindi, Thai, Russian, and European scripts
 - Barcode and QR code generation
 - Image printing (assets and programmatic)

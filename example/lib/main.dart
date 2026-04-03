@@ -44,15 +44,16 @@ class _PrinterDemoPageState extends State<PrinterDemoPage> {
   PrinterConnectionType? _scanFilter;
 
   /// Which test parts to include when printing. All 6 by default.
-  final Set<int> _selectedParts = {1, 2, 3, 4, 5, 6};
+  final Set<int> _selectedParts = {1, 2, 3, 4, 5, 6, 7};
 
   static const _partLabels = {
     1: 'Image & Text',
     2: 'Row & Columns',
     3: 'Multilingual',
     4: 'Text Raster',
-    5: 'Barcodes',
-    6: 'QR, Beep & Cashdrawer',
+    5: 'Raster Row & Columns',
+    6: 'Barcodes',
+    7: 'QR, Beep & Cashdrawer',
   };
 
   @override
@@ -129,8 +130,9 @@ class _PrinterDemoPageState extends State<PrinterDemoPage> {
       if (_selectedParts.contains(2)) _addPart2(ticket);
       if (_selectedParts.contains(3)) await _addPart3(ticket);
       if (_selectedParts.contains(4)) await _addPart4(ticket);
-      if (_selectedParts.contains(5)) _addPart5(ticket);
+      if (_selectedParts.contains(5)) await _addPart5(ticket);
       if (_selectedParts.contains(6)) _addPart6(ticket);
+      if (_selectedParts.contains(7)) _addPart7(ticket);
 
       _addFooter(ticket);
       ticket.cut();
@@ -715,8 +717,8 @@ class _PrinterDemoPageState extends State<PrinterDemoPage> {
     ticket.emptyLines();
   }
 
-  // PART 5: Barcodes
-  void _addPart5(Ticket ticket) {
+  // PART 6: Barcodes
+  void _addPart6(Ticket ticket) {
     ticket.text(
       'BARCODES',
       align: PrintAlign.center,
@@ -770,8 +772,8 @@ class _PrinterDemoPageState extends State<PrinterDemoPage> {
     ticket.emptyLines();
   }
 
-  // PART 6: QR Codes, Raster Images, Beep
-  void _addPart6(Ticket ticket) {
+  // PART 7: QR Codes, Raster Images, Beep
+  void _addPart7(Ticket ticket) {
     ticket.text(
       'QR CODES',
       align: PrintAlign.center,
@@ -849,6 +851,74 @@ class _PrinterDemoPageState extends State<PrinterDemoPage> {
       style: const PrintTextStyle(bold: true),
     );
     ticket.openCashDrawer();
+
+    ticket.emptyLines();
+  }
+
+  // PART 5: Raster Row & Columns (Flutter TextStyle columns)
+  Future<void> _addPart5(Ticket ticket) async {
+    ticket.text(
+      'RASTER ROW & COLUMNS',
+      align: PrintAlign.center,
+      style: const PrintTextStyle(bold: true),
+    );
+    ticket.separator();
+
+    // Simple two-column layout
+    await ticket.rowRaster([
+      PrintRasterColumn(text: 'Item', flex: 2),
+      PrintRasterColumn(text: 'Price', flex: 1, align: PrintAlign.right),
+    ]);
+
+    await ticket.rowRaster([
+      PrintRasterColumn(text: 'Cappuccino', flex: 2),
+      PrintRasterColumn(text: '\$4.50', flex: 1, align: PrintAlign.right),
+    ]);
+
+    await ticket.rowRaster([
+      PrintRasterColumn(text: 'Croissant', flex: 2),
+      PrintRasterColumn(text: '\$3.25', flex: 1, align: PrintAlign.right),
+    ]);
+
+    ticket.emptyLines();
+
+    // Styled columns
+    await ticket.rowRaster([
+      PrintRasterColumn(
+        text: 'Bold Title',
+        flex: 1,
+        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+      ),
+      PrintRasterColumn(
+        text: 'Normal',
+        flex: 1,
+        align: PrintAlign.right,
+      ),
+    ]);
+
+    ticket.emptyLines();
+
+    // Three-column layout
+    await ticket.rowRaster([
+      PrintRasterColumn(text: 'Left', flex: 1),
+      PrintRasterColumn(text: 'Center', flex: 1, align: PrintAlign.center),
+      PrintRasterColumn(text: 'Right', flex: 1, align: PrintAlign.right),
+    ]);
+
+    ticket.emptyLines();
+
+    // Multilingual raster row
+    await ticket.rowRaster([
+      PrintRasterColumn(text: '商品名', flex: 2),
+      PrintRasterColumn(text: '数量', flex: 1, align: PrintAlign.center),
+      PrintRasterColumn(text: '价格', flex: 1, align: PrintAlign.right),
+    ]);
+
+    await ticket.rowRaster([
+      PrintRasterColumn(text: '拿铁咖啡', flex: 2),
+      PrintRasterColumn(text: 'x2', flex: 1, align: PrintAlign.center),
+      PrintRasterColumn(text: '¥56.00', flex: 1, align: PrintAlign.right),
+    ]);
 
     ticket.emptyLines();
   }

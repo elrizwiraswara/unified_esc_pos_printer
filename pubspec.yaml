@@ -1,6 +1,6 @@
 name: unified_esc_pos_printer
 description: Unified ESC/POS thermal printer package for Flutter. Supports USB, Bluetooth Classic, BLE, and Network connections with a single PrinterManager API
-version: 3.0.1
+version: 3.1.0
 homepage: https://github.com/elrizwiraswara/unified_esc_pos_printer
 repository: https://github.com/elrizwiraswara/unified_esc_pos_printer
 
