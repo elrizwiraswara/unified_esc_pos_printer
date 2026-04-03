@@ -1,3 +1,7 @@
+## 3.2.0
+
+- Migrate USB serial dependency from `flutter_libserialport` to `libserialport_plus` to fix Android 16KB page size compatibility ([#3](https://github.com/elrizwiraswara/unified_esc_pos_printer/pull/3))
+
 ## 3.1.0
 
 - Add `PrintRasterColumn` class for Flutter `TextStyle`-based column definitions
