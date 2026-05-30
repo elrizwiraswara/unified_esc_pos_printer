@@ -25,14 +25,16 @@ A unified ESC/POS thermal printer package for Flutter. Supports USB, Bluetooth C
 
 ## Platform Support
 
-| Connection        | Android         | iOS | Windows             | Linux        | macOS        |
-| ----------------- | --------------- | --- | ------------------- | ------------ | ------------ |
-| Network (TCP/IP)  | Yes             | Yes | Yes                 | Yes          | Yes          |
-| Bluetooth Classic | Yes             | —   | Yes                 | —            | —            |
-| BLE               | Yes             | Yes | Yes                 | —            | —            |
-| USB               | OTG (CDC only)  | —   | Yes (Print Spooler) | Yes (serial) | Yes (serial) |
+| Connection        | Android           | iOS | Windows             | Linux        | macOS        |
+| ----------------- | ----------------- | --- | ------------------- | ------------ | ------------ |
+| Network (TCP/IP)  | Yes               | Yes | Yes                 | Yes          | Yes          |
+| Bluetooth Classic | Yes               | —   | Yes                 | —            | —            |
+| BLE               | Yes               | Yes | Yes                 | —            | —            |
+| USB               | Yes (serial only) | —   | Yes (Print Spooler) | Yes (serial) | Yes (serial) |
 
-> **Android USB limitation:** On Android, USB support uses the `usb_serial` package, which only works with printers that expose a USB CDC / Virtual COM interface (FTDI, CP210x, PL2303, CH34x, or USB CDC ACM). Printers that present themselves as **USB Printer Class** (interface class `0x07`) — common for many ESC/POS thermal printers — will fail with `Not an Serial device`. For those printers on Android, use Bluetooth or Network instead, or check whether your printer has a mode switch to Virtual COM / CDC.
+> **Android USB limitations:**
+> 1. **Host hardware:** the Android device must support **USB OTG** (host mode). Most modern phones and tablets do, but not all.
+> 2. **Printer class:** the Android USB path uses the `usb_serial` package, which only works with printers that expose a **USB CDC / Virtual COM** interface (FTDI, CP210x, PL2303, CH34x, or USB CDC ACM). Printers that present themselves as **USB Printer Class** (interface class `0x07`) — common for many ESC/POS thermal printers — will fail with `Not an Serial device`. For those printers on Android, use Bluetooth or Network instead, or check whether your printer has a mode switch to Virtual COM / CDC.
 
 ### Tested Devices
 
