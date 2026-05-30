@@ -1,18 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.elriztechnology.unified_esc_pos_printer">
 
-    <!-- Pre-Android 12 (API < 31) -->
-    <uses-permission android:name="android.permission.BLUETOOTH"
-        android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
-        android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"
-        android:maxSdkVersion="30" />
+    <!--
+        This package intentionally declares no permissions.
 
-    <!-- Android 12+ (API 31+) -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+        Permissions must be declared by the consuming app in its own
+        AndroidManifest.xml so that the app can choose the correct
+        maxSdkVersion gating for its use case. See the package README
+        ("Android Setup") for the recommended permission set.
+    -->
 </manifest>
