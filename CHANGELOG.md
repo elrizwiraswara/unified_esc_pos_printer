@@ -1,3 +1,7 @@
+## 3.2.1
+
+- Remove hardcoded permissions from the package's Android manifest. The library no longer declares `BLUETOOTH`, `BLUETOOTH_ADMIN`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`, or `ACCESS_COARSE_LOCATION` — these previously included `maxSdkVersion="30"` on the location entries, which the Android manifest merger propagated into consuming apps and broke apps that need location permissions on API 31+ for other features (maps, geolocation, etc.). Consumers must now declare the permissions they need in their own `AndroidManifest.xml`; see the updated "Android Setup" section in the README for the recommended permission set.
+
 ## 3.2.0
 
 - Migrate USB serial dependency from `flutter_libserialport` to `libserialport_plus` to fix Android 16KB page size compatibility ([#3](https://github.com/elrizwiraswara/unified_esc_pos_printer/pull/3))

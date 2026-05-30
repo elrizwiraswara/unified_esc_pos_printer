@@ -51,24 +51,41 @@ dependencies:
 
 ### Android Setup
 
-Add the following permissions to `android/app/src/main/AndroidManifest.xml`:
+This package does **not** declare any permissions in its own manifest. You must add the permissions you need to your app's `android/app/src/main/AndroidManifest.xml`. This lets your app control its own `maxSdkVersion` gating — important if your app needs `ACCESS_FINE_LOCATION` on Android 12+ for other purposes (maps, geolocation, geofencing, etc.).
+
+Add only the permissions for the connection types you use:
 
 ```xml
-<!-- Network -->
+<!-- Network (TCP/IP printers) -->
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-<!-- Bluetooth -->
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<!-- Bluetooth Classic / BLE — Android 11 and below (API ≤ 30) -->
+<uses-permission android:name="android.permission.BLUETOOTH"
+    android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+    android:maxSdkVersion="30" />
 
-<!-- USB -->
+<!-- Bluetooth scan requires location on API ≤ 30.
+     If your app does NOT otherwise need location on API 31+, add maxSdkVersion="30".
+     If your app DOES need location for other features (maps, geolocation, etc.),
+     omit the maxSdkVersion attribute. -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+    android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"
+    android:maxSdkVersion="30" />
+
+<!-- Bluetooth Classic / BLE — Android 12+ (API 31+) -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+    android:usesPermissionFlags="neverForLocation" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<!-- USB (OTG) -->
 <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 ```
+
+> **Note on `neverForLocation`:** the `BLUETOOTH_SCAN` declaration above uses `usesPermissionFlags="neverForLocation"` to tell Android that your app does not derive physical location from BLE scan results. Remove this flag if your app *does* use BLE scans to infer location — in that case you must also request `ACCESS_FINE_LOCATION` at runtime on API 31+.
 
 ### iOS Setup
 
