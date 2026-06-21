@@ -21,6 +21,7 @@ class UnifiedEscPosPrinterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
     private lateinit var permissionHandler: PermissionHandler
     private lateinit var bleManager: BleManager
     private lateinit var bluetoothClassicManager: BluetoothClassicManager
+    private lateinit var usbPrinterClassManager: UsbPrinterClassManager
 
     private var activity: Activity? = null
     private var activityBinding: ActivityPluginBinding? = null
@@ -39,6 +40,7 @@ class UnifiedEscPosPrinterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         permissionHandler = PermissionHandler()
         bleManager = BleManager(context)
         bluetoothClassicManager = BluetoothClassicManager(context)
+        usbPrinterClassManager = UsbPrinterClassManager(context)
 
         bleScanEventChannel.setStreamHandler(bleManager.scanStreamHandler)
         btScanEventChannel.setStreamHandler(bluetoothClassicManager.scanStreamHandler)
@@ -52,6 +54,7 @@ class UnifiedEscPosPrinterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         connectionStateEventChannel.setStreamHandler(null)
         bleManager.dispose()
         bluetoothClassicManager.dispose()
+        usbPrinterClassManager.dispose()
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -139,6 +142,21 @@ class UnifiedEscPosPrinterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
                 bluetoothClassicManager.write(data, result)
             }
             "btDisconnect" -> bluetoothClassicManager.disconnect(result)
+
+            // USB Printer Class (interface class 0x07) — fallback for printers
+            // that don't expose a CDC / serial-chip interface and therefore
+            // cannot be opened by the `usb_serial` package.
+            "usbListDevices" -> usbPrinterClassManager.listUsbDevices(result)
+            "usbOpenPrinterClass" -> {
+                val vid = call.argument<Int>("vid")!!
+                val pid = call.argument<Int>("pid")!!
+                usbPrinterClassManager.openPrinterClass(vid, pid, result)
+            }
+            "usbWrite" -> {
+                val data = call.argument<ByteArray>("data")!!
+                usbPrinterClassManager.write(data, result)
+            }
+            "usbClose" -> usbPrinterClassManager.close(result)
 
             else -> result.notImplemented()
         }

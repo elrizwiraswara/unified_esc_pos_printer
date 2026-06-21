@@ -1,3 +1,7 @@
+## 3.3.0
+
+- Add native Android support for USB Printer Class (interface class `0x07`) devices ([#5](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/5), [#8](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/8)). Most generic ESC/POS thermal printers expose this class instead of a CDC / serial chip and previously failed with `Not an Serial device` from the `usb_serial` package. The connector now probes each device's USB interface classes and routes Printer Class devices through a new native `UsbManager` + `bulkTransfer` path while keeping the existing `usb_serial` path for CDC / Virtual COM devices (FTDI, CP210x, PL2303, CH34x, USB CDC ACM). The user sees a one-time Android USB permission dialog on first connect to a Printer Class device.
+
 ## 3.2.1
 
 - Remove hardcoded permissions from the package's Android manifest. The library no longer declares `BLUETOOTH`, `BLUETOOTH_ADMIN`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`, or `ACCESS_COARSE_LOCATION` — these previously included `maxSdkVersion="30"` on the location entries, which the Android manifest merger propagated into consuming apps and broke apps that need location permissions on API 31+ for other features (maps, geolocation, etc.). Consumers must now declare the permissions they need in their own `AndroidManifest.xml`; see the updated "Android Setup" section in the README for the recommended permission set.

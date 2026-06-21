@@ -7,19 +7,28 @@ import '../../core/commands.dart';
 import '../../exceptions/printer_exception.dart';
 import '../../models/printer_connection_state.dart';
 import '../../models/printer_device.dart';
+import '../../platform/usb_platform_channel_android.dart';
 import 'usb_connector_interface.dart';
 
-/// USB connector for Android using the `usb_serial` plugin.
+/// USB connector for Android.
 ///
-/// Scans for connected USB serial devices via [UsbSerial.listDevices].
-/// Requests USB permission before opening the port, then configures it for
-/// 115200 baud 8N1 communication (standard for ESC/POS USB printers).
+/// Tries two paths in order based on the printer's USB interface class:
+///
+/// 1. **CDC / serial-chip path (default):** uses the `usb_serial` plugin.
+///    Works for FTDI, CP210x, PL2303, CH34x, and USB CDC ACM devices.
+/// 2. **USB Printer Class path (fallback):** uses the native Android
+///    `UsbManager` + `bulkTransfer` via [UsbPlatformChannelAndroid].
+///    Engaged when the device exposes an interface with class `0x07`
+///    (USB_CLASS_PRINTER). Covers most generic ESC/POS thermal printers.
 class UsbConnectorImpl extends UsbConnectorBase {
   UsbPort? _port;
+  bool _usingPrinterClass = false;
 
   PrinterConnectionState _state = PrinterConnectionState.disconnected;
   final StreamController<PrinterConnectionState> _stateController =
       StreamController<PrinterConnectionState>.broadcast();
+
+  final UsbPlatformChannelAndroid _native = UsbPlatformChannelAndroid.instance;
 
   @override
   Stream<PrinterConnectionState> get stateStream => _stateController.stream;
@@ -61,7 +70,51 @@ class UsbConnectorImpl extends UsbConnectorBase {
     _assertState(PrinterConnectionState.disconnected, 'connect');
     _setState(PrinterConnectionState.connecting);
 
-    // Find the matching USB device.
+    final parts = device.identifier.split(':');
+    final int? vid = parts.length == 2 ? int.tryParse(parts[0]) : null;
+    final int? pid = parts.length == 2 ? int.tryParse(parts[1]) : null;
+    if (vid == null || pid == null) {
+      _failConnect();
+      throw PrinterConnectionException(
+        'Invalid USB device identifier: ${device.identifier}',
+      );
+    }
+
+    // Probe the device's interface classes via the native channel so we
+    // can pick the right path up front. If the native probe fails for any
+    // reason (older host, plugin issue), fall through to the usb_serial
+    // path so behavior is no worse than before this connector supported
+    // Printer Class.
+    bool isPrinterClass = false;
+    try {
+      final list = await _native.listUsbDevices();
+      for (final d in list) {
+        if (d['vid'] == vid && d['pid'] == pid) {
+          isPrinterClass = (d['hasPrinterClass'] as bool?) ?? false;
+          break;
+        }
+      }
+    } catch (_) {
+      // Native unavailable; fall back to usb_serial path below.
+    }
+
+    if (isPrinterClass) {
+      try {
+        await _native.openPrinterClass(vid: vid, pid: pid);
+        await _native.write(cInit.codeUnits);
+        _usingPrinterClass = true;
+        _setState(PrinterConnectionState.connected);
+        return;
+      } catch (e) {
+        _failConnect();
+        throw PrinterConnectionException(
+          'Failed to open USB printer-class device ${device.identifier}',
+          cause: e,
+        );
+      }
+    }
+
+    // CDC / serial-chip path via usb_serial.
     final List<UsbDevice> devices = await UsbSerial.listDevices();
     UsbDevice? found;
     for (final UsbDevice d in devices) {
@@ -72,8 +125,7 @@ class UsbConnectorImpl extends UsbConnectorBase {
     }
 
     if (found == null) {
-      _setState(PrinterConnectionState.error);
-      _setState(PrinterConnectionState.disconnected);
+      _failConnect();
       throw PrinterNotFoundException(
         'USB device ${device.identifier} not found',
       );
@@ -96,15 +148,13 @@ class UsbConnectorImpl extends UsbConnectorBase {
         UsbPort.PARITY_NONE,
       );
 
-      // Send ESC @ to initialise the printer.
       await port.write(Uint8List.fromList(cInit.codeUnits));
 
       _port = port;
       _setState(PrinterConnectionState.connected);
     } catch (e) {
       await port?.close();
-      _setState(PrinterConnectionState.error);
-      _setState(PrinterConnectionState.disconnected);
+      _failConnect();
       throw PrinterConnectionException(
         'Failed to open USB device ${device.identifier}',
         cause: e,
@@ -117,7 +167,11 @@ class UsbConnectorImpl extends UsbConnectorBase {
     _assertState(PrinterConnectionState.connected, 'writeBytes');
     _setState(PrinterConnectionState.printing);
     try {
-      await _port!.write(Uint8List.fromList(bytes));
+      if (_usingPrinterClass) {
+        await _native.write(bytes);
+      } else {
+        await _port!.write(Uint8List.fromList(bytes));
+      }
       _setState(PrinterConnectionState.connected);
     } catch (e) {
       _setState(PrinterConnectionState.error);
@@ -131,9 +185,14 @@ class UsbConnectorImpl extends UsbConnectorBase {
     if (_state == PrinterConnectionState.disconnected) return;
     _setState(PrinterConnectionState.disconnecting);
     try {
-      await _port?.close();
+      if (_usingPrinterClass) {
+        await _native.close();
+      } else {
+        await _port?.close();
+      }
     } finally {
       _port = null;
+      _usingPrinterClass = false;
       _setState(PrinterConnectionState.disconnected);
     }
   }
@@ -147,6 +206,11 @@ class UsbConnectorImpl extends UsbConnectorBase {
   void _setState(PrinterConnectionState next) {
     _state = next;
     if (!_stateController.isClosed) _stateController.add(next);
+  }
+
+  void _failConnect() {
+    _setState(PrinterConnectionState.error);
+    _setState(PrinterConnectionState.disconnected);
   }
 
   void _assertState(PrinterConnectionState required, String operation) {
