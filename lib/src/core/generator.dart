@@ -419,7 +419,10 @@ class Generator {
 
   /// Print a table row.
   ///
-  /// [cols] must sum to exactly 12 in total width.
+  /// Columns are sized proportionally by their [PrintColumn.flex] values — any
+  /// positive integers work, they need not sum to a fixed total. Each column is
+  /// placed with an absolute print position (ESC $) and aligned within its cell
+  /// via that position, so the columns share a single printed line.
   /// Set [multiLine] to true (default) to automatically wrap overflowing
   /// column content to a subsequent row.
   List<int> row(
@@ -431,6 +434,15 @@ class Generator {
     final int paperPx = paperSize.widthPixels;
 
     List<int> bytes = [];
+
+    // Establish LEFT justification once, at the beginning of the line — the
+    // only place ESC a is honoured. Per-column alignment is handled entirely
+    // by the absolute print position (ESC $) computed in [_text], so the
+    // justification command must NOT be re-issued per column. Emitting ESC a
+    // mid-line makes many generic ESC/POS printers flush the buffered line and
+    // feed, which pushes every column onto its own line (issue #10).
+    bytes += _setAlign(PrintAlign.left);
+
     bool isNextRow = false;
     final List<PrintColumn> nextRow = [];
 
@@ -720,7 +732,12 @@ class Generator {
       );
     }
 
-    bytes += setStyles(style, align: align);
+    // For positioned text (table columns), horizontal alignment is realised by
+    // the ESC $ absolute position set above — `align` only shifts that position.
+    // Re-issuing ESC a here would be redundant and, mid-line, makes many
+    // generic ESC/POS printers flush the line, breaking rows onto separate
+    // lines (issue #10). So only emit ESC a for full-line text (fromPx == null).
+    bytes += setStyles(style, align: fromPx == null ? align : null);
     bytes += textBytes;
     return bytes;
   }

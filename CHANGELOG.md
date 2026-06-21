@@ -1,3 +1,7 @@
+## 3.3.1
+
+- Fix `Ticket.row()` / `Generator.row()` printing each column on its own line on many generic ESC/POS printers ([#10](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/10)). Each column was preceded by its own `ESC a` (select justification) command. Per the ESC/POS specification `ESC a` is only honoured at the beginning of a line, and many clone printers respond to a mid-line `ESC a` by flushing the buffered line and feeding — pushing every column onto a separate line. Column alignment is already achieved by the absolute print position (`ESC $`), so `ESC a` is now emitted only once per row (left justification, at the start of the line) and never per column. Output is unchanged on printers that previously rendered rows correctly.
+
 ## 3.3.0
 
 - Add native Android support for USB Printer Class (interface class `0x07`) devices ([#5](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/5), [#8](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/8)). Most generic ESC/POS thermal printers expose this class instead of a CDC / serial chip and previously failed with `Not an Serial device` from the `usb_serial` package. The connector now probes each device's USB interface classes and routes Printer Class devices through a new native `UsbManager` + `bulkTransfer` path while keeping the existing `usb_serial` path for CDC / Virtual COM devices (FTDI, CP210x, PL2303, CH34x, USB CDC ACM). The user sees a one-time Android USB permission dialog on first connect to a Printer Class device.
