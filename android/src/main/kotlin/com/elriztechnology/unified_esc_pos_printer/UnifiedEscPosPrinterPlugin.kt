@@ -37,7 +37,7 @@ class UnifiedEscPosPrinterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwa
         btScanEventChannel = EventChannel(messenger, "com.elriztechnology.unified_esc_pos_printer/bt_scan")
         connectionStateEventChannel = EventChannel(messenger, "com.elriztechnology.unified_esc_pos_printer/connection_state")
 
-        permissionHandler = PermissionHandler()
+        permissionHandler = PermissionHandler(context)
         bleManager = BleManager(context)
         bluetoothClassicManager = BluetoothClassicManager(context)
         usbPrinterClassManager = UsbPrinterClassManager(context)

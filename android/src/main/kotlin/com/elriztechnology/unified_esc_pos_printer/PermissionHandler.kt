@@ -2,13 +2,14 @@ package com.elriztechnology.unified_esc_pos_printer
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.MethodChannel
 
-class PermissionHandler {
+class PermissionHandler(private val context: Context) {
 
     companion object {
         private const val REQUEST_CODE = 29501
@@ -22,18 +23,27 @@ class PermissionHandler {
     }
 
     fun requestPermissions(result: MethodChannel.Result) {
-        val act = activity
-        if (act == null) {
-            result.success(false)
-            return
-        }
-
+        // Check what's still missing using the application context. This works
+        // even without an Activity (e.g. from a background isolate such as a
+        // Firebase Messaging background handler or WorkManager), so callers can
+        // proceed when the permissions were already granted in a prior
+        // foreground session (issue #12).
         val needed = getRequiredPermissions().filter {
-            ContextCompat.checkSelfPermission(act, it) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
         }
 
         if (needed.isEmpty()) {
             result.success(true)
+            return
+        }
+
+        // Something still needs to be requested, which requires an Activity to
+        // show the system prompt. Without one (background isolate) we cannot
+        // prompt, so report not-granted and let the Dart layer surface a clear
+        // error instead of silently hanging.
+        val act = activity
+        if (act == null) {
+            result.success(false)
             return
         }
 
