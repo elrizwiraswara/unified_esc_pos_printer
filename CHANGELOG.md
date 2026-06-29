@@ -1,3 +1,7 @@
+## 3.3.3
+
+- Add Swift Package Manager (SPM) support for iOS. The plugin now ships with a `Package.swift` manifest alongside the existing CocoaPods podspec, giving consumers the choice of integration method. Compatible with Flutter ≥ 3.22 (enable via `ENV['SWIFT_PACKAGE_MANAGER'] = 'true'` in the project Podfile). No source code changes — the same Swift files are shared between both systems.
+
 ## 3.3.2
 
 - Allow Bluetooth scan/connect from a background isolate (e.g. a Firebase Messaging background handler or WorkManager) when the required permissions were already granted in a prior foreground session ([#12](https://github.com/elrizwiraswara/unified_esc_pos_printer/issues/12)). The native permission handler previously returned `false` whenever no `Activity` was attached, which is always the case in a background isolate, so every `scan()`/`connect()` threw a permission error even though the OS permissions were granted. It now checks already-granted permissions against the application context (which needs no `Activity`) and only requires an `Activity` to *prompt* for missing ones. Background isolates still cannot show a permission prompt, and Bluetooth discovery remains unreliable there, so connect to a known device by address rather than scanning.
