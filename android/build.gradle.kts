@@ -14,7 +14,7 @@ if (agpMajor < 9) {
 
 android {
     namespace = "com.elriztechnology.unified_esc_pos_printer"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
