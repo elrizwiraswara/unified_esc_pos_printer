@@ -16,7 +16,7 @@ dependencies:
   image: ^4.8.0
 
   # USB — Android OTG
-  usb_serial: ^0.5.2
+  usb_serial: ">=0.5.2 <0.7.0"
 
   # USB — Windows / Linux / macOS serial port (wraps libserialport).
   # Wide range: the API this package uses is compatible with both 0.1.x
